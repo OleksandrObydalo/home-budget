@@ -1,0 +1,189 @@
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Домашні Витрати - Розумний облік фінансів</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/1.30.1/date_fns.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                    <h1>Домашні Витрати</h1>
+                </div>
+                <div class="balance-display">
+                    <span class="balance-label">Баланс:</span>
+                    <span class="balance-amount" id="totalBalance">₴0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="expenses">
+                <i class="fas fa-plus-circle"></i>
+                Витрати
+            </button>
+            <button class="nav-tab" data-tab="analytics">
+                <i class="fas fa-chart-pie"></i>
+                Аналітика
+            </button>
+            <button class="nav-tab" data-tab="tips">
+                <i class="fas fa-lightbulb"></i>
+                Поради
+            </button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Expenses Tab -->
+            <section class="tab-content active" id="expenses-tab">
+                <div class="expense-form-container">
+                    <h2>Додати нову витрату</h2>
+                    <form class="expense-form" id="expenseForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="amount">Сума (₴)</label>
+                                <input type="number" id="amount" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="category">Категорія</label>
+                                <select id="category" required>
+                                    <option value="">Оберіть категорію</option>
+                                    <option value="food">🍎 Їжа</option>
+                                    <option value="transport">🚗 Транспорт</option>
+                                    <option value="utilities">⚡ Комунальні</option>
+                                    <option value="entertainment">🎬 Розваги</option>
+                                    <option value="clothing">👕 Одяг</option>
+                                    <option value="health">🏥 Здоров'я</option>
+                                    <option value="education">📚 Освіта</option>
+                                    <option value="other">📦 Інше</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="description">Опис</label>
+                                <input type="text" id="description" placeholder="Опис витрати">
+                            </div>
+                            <div class="form-group">
+                                <label for="date">Дата</label>
+                                <input type="date" id="date" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="add-btn">
+                            <i class="fas fa-plus"></i>
+                            Додати витрату
+                        </button>
+                    </form>
+                </div>
+
+                <div class="expenses-list-container">
+                    <div class="list-header">
+                        <h3>Останні витрати</h3>
+                        <div class="filter-controls">
+                            <select id="categoryFilter">
+                                <option value="">Всі категорії</option>
+                                <option value="food">🍎 Їжа</option>
+                                <option value="transport">🚗 Транспорт</option>
+                                <option value="utilities">⚡ Комунальні</option>
+                                <option value="entertainment">🎬 Розваги</option>
+                                <option value="clothing">👕 Одяг</option>
+                                <option value="health">🏥 Здоров'я</option>
+                                <option value="education">📚 Освіта</option>
+                                <option value="other">📦 Інше</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="expenses-list" id="expensesList">
+                        <!-- Expenses will be rendered here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analytics Tab -->
+            <section class="tab-content" id="analytics-tab">
+                <div class="analytics-header">
+                    <h2>Аналітика витрат</h2>
+                    <div class="period-selector">
+                        <button class="period-btn active" data-period="week">Тиждень</button>
+                        <button class="period-btn" data-period="month">Місяць</button>
+                        <button class="period-btn" data-period="year">Рік</button>
+                    </div>
+                </div>
+
+                <div class="analytics-grid">
+                    <div class="chart-container">
+                        <h3>Витрати за категоріями</h3>
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Динаміка витрат</h3>
+                        <canvas id="timeChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="statistics-cards">
+                    <div class="stat-card">
+                        <i class="fas fa-calendar-week"></i>
+                        <div class="stat-content">
+                            <span class="stat-value" id="weeklyTotal">₴0</span>
+                            <span class="stat-label">Цього тижня</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-calendar-alt"></i>
+                        <div class="stat-content">
+                            <span class="stat-value" id="monthlyTotal">₴0</span>
+                            <span class="stat-label">Цього місяця</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-chart-line"></i>
+                        <div class="stat-content">
+                            <span class="stat-value" id="avgDaily">₴0</span>
+                            <span class="stat-label">В середньому за день</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tips Tab -->
+            <section class="tab-content" id="tips-tab">
+                <div class="tips-header">
+                    <h2>Поради з економії</h2>
+                    <p>Персоналізовані рекомендації на основі ваших витрат</p>
+                </div>
+
+                <div class="tips-container" id="tipsContainer">
+                    <!-- Tips will be generated here -->
+                </div>
+
+                <div class="savings-goals">
+                    <h3>Цілі економії</h3>
+                    <div class="goal-form">
+                        <input type="number" id="savingsGoal" placeholder="Сума для економії (₴)">
+                        <select id="goalPeriod">
+                            <option value="month">За місяць</option>
+                            <option value="quarter">За квартал</option>
+                            <option value="year">За рік</option>
+                        </select>
+                        <button id="setGoalBtn">Встановити ціль</button>
+                    </div>
+                    <div class="goals-list" id="goalsList">
+                        <!-- Goals will be displayed here -->
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
