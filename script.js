@@ -1,6 +1,7 @@
 class ExpenseTracker {
     constructor() {
         this.expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+        this.income = JSON.parse(localStorage.getItem('income')) || [];
         this.goals = JSON.parse(localStorage.getItem('goals')) || [];
         this.currentTab = 'expenses';
         this.currentPeriod = 'month';
@@ -26,6 +27,24 @@ class ExpenseTracker {
             education: '📚',
             other: '📦'
         };
+
+        this.incomeCategories = {
+            work: '#10b981',
+            rent: '#3b82f6',
+            business: '#8b5cf6',
+            scholarship: '#f59e0b',
+            pension: '#ef4444',
+            government: '#06b6d4'
+        };
+
+        this.incomeIcons = {
+            work: '💼',
+            rent: '🏠',
+            business: '🏢',
+            scholarship: '🎓',
+            pension: '👴',
+            government: '🏛️'
+        };
         
         this.init();
     }
@@ -33,6 +52,7 @@ class ExpenseTracker {
     init() {
         this.setupEventListeners();
         this.renderExpenses();
+        this.renderIncome();
         this.updateBalance();
         this.updateStatistics();
         this.generateTips();
@@ -54,9 +74,20 @@ class ExpenseTracker {
             this.addExpense();
         });
 
+        // Income form
+        document.getElementById('incomeForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.addIncome();
+        });
+
         // Category filter
         document.getElementById('categoryFilter').addEventListener('change', (e) => {
             this.renderExpenses(e.target.value);
+        });
+
+        // Income category filter
+        document.getElementById('incomeCategoryFilter').addEventListener('change', (e) => {
+            this.renderIncome(e.target.value);
         });
 
         // Period selector
@@ -74,6 +105,7 @@ class ExpenseTracker {
 
     setTodayDate() {
         document.getElementById('date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('incomeDate').value = new Date().toISOString().split('T')[0];
     }
 
     switchTab(tabName) {
@@ -96,6 +128,8 @@ class ExpenseTracker {
             this.renderCharts();
         } else if (tabName === 'tips') {
             this.generateTips();
+        } else if (tabName === 'income') {
+            this.renderIncome();
         }
     }
 
@@ -181,8 +215,13 @@ class ExpenseTracker {
     }
 
     updateBalance() {
-        const total = this.expenses.reduce((sum, expense) => sum + expense.amount, 0);
-        document.getElementById('totalBalance').textContent = `-₴${total.toFixed(2)}`;
+        const totalExpenses = this.expenses.reduce((sum, expense) => sum + expense.amount, 0);
+        const totalIncome = this.income.reduce((sum, income) => sum + income.amount, 0);
+        const balance = totalIncome - totalExpenses;
+        
+        const balanceElement = document.getElementById('totalBalance');
+        balanceElement.textContent = `₴${balance.toFixed(2)}`;
+        balanceElement.style.color = balance >= 0 ? 'var(--success-color)' : 'var(--danger-color)';
     }
 
     updateStatistics() {
@@ -224,6 +263,9 @@ class ExpenseTracker {
     renderCharts() {
         this.renderCategoryChart();
         this.renderTimeChart();
+        this.renderIncomeCategoryChart(); 
+        this.renderBudgetDynamicsChart();
+        this.renderIncomeDynamicsChart(); 
     }
 
     renderCategoryChart() {
@@ -329,6 +371,265 @@ class ExpenseTracker {
         });
     }
 
+    renderIncomeCategoryChart() {
+        const ctx = document.getElementById('incomeCategoryChart').getContext('2d');
+        
+        // Clear existing chart if it exists
+        if (window.incomeCategoryChartInstance) {
+            window.incomeCategoryChartInstance.destroy();
+        }
+
+        // Get income for the current period
+        const periodIncome = this.getIncomeForPeriod();
+        const categoryTotals = {};
+
+        // Calculate total income per category
+        periodIncome.forEach(income => {
+            categoryTotals[income.category] = (categoryTotals[income.category] || 0) + income.amount;
+        });
+
+        // Prepare data for chart
+        const labels = Object.keys(categoryTotals).map(cat => this.getIncomeCategoryName(cat));
+        const data = Object.values(categoryTotals);
+        const colors = Object.keys(categoryTotals).map(cat => this.incomeCategories[cat]);
+
+        // Create doughnut chart for income categories
+        window.incomeCategoryChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels,
+                datasets: [{
+                    data,
+                    backgroundColor: colors,
+                    borderWidth: 2,
+                    borderColor: '#1e293b'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#cbd5e1',
+                            usePointStyle: true,
+                            padding: 20
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    renderBudgetDynamicsChart() {
+        const ctx = document.getElementById('budgetDynamicsChart').getContext('2d');
+        
+        // Clear existing chart if it exists
+        if (window.budgetDynamicsChartInstance) {
+            window.budgetDynamicsChartInstance.destroy();
+        }
+
+        // Get income and expenses for the current period
+        const periodIncome = this.getIncomeForPeriod();
+        const periodExpenses = this.getExpensesForPeriod();
+
+        // Calculate budget difference over time
+        const budgetDifferenceData = this.calculateBudgetDifference(periodIncome, periodExpenses);
+
+        // Create line chart showing budget difference
+        window.budgetDynamicsChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: budgetDifferenceData.labels,
+                datasets: [
+                    {
+                        label: 'Різниця Бюджету (₴)',
+                        data: budgetDifferenceData.values,
+                        borderColor: budgetDifferenceData.values.map(val => val >= 0 ? '#10b981' : '#ef4444'), // Green for positive, red for negative
+                        backgroundColor: budgetDifferenceData.values.map(val => val >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'),
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        grid: {
+                            color: '#374151'
+                        },
+                        ticks: {
+                            color: '#cbd5e1'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: '#374151'
+                        },
+                        ticks: {
+                            color: '#cbd5e1'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#cbd5e1'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let value = context.parsed.y;
+                                return `Різниця: ₴${value.toFixed(2)}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    renderIncomeDynamicsChart() {
+        const ctx = document.getElementById('incomeDynamicsChart').getContext('2d');
+        
+        // Clear existing chart if it exists
+        if (window.incomeDynamicsChartInstance) {
+            window.incomeDynamicsChartInstance.destroy();
+        }
+
+        // Get income for the current period
+        const periodIncome = this.getIncomeForPeriod();
+        const timeData = this.groupIncomeByTime(periodIncome);
+
+        window.incomeDynamicsChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: timeData.labels,
+                datasets: [{
+                    label: 'Доходи (₴)',
+                    data: timeData.values,
+                    borderColor: '#10b981', // Green color for income
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#374151'
+                        },
+                        ticks: {
+                            color: '#cbd5e1'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: '#374151'
+                        },
+                        ticks: {
+                            color: '#cbd5e1'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#cbd5e1'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    groupIncomeByTime(income) {
+        const grouped = {};
+        const labels = [];
+        const values = [];
+
+        income.forEach(inc => {
+            const date = new Date(inc.date);
+            let key;
+
+            if (this.currentPeriod === 'week') {
+                key = date.toLocaleDateString('uk-UA', { weekday: 'short' });
+            } else if (this.currentPeriod === 'month') {
+                key = date.getDate().toString();
+            } else {
+                key = date.toLocaleDateString('uk-UA', { month: 'short' });
+            }
+
+            grouped[key] = (grouped[key] || 0) + inc.amount;
+        });
+
+        Object.keys(grouped).forEach(key => {
+            labels.push(key);
+            values.push(grouped[key]);
+        });
+
+        return { labels, values };
+    }
+
+    calculateBudgetDifference(income, expenses) {
+        const groupedData = {};
+
+        // Group income and expenses by date
+        income.forEach(inc => {
+            const date = new Date(inc.date);
+            let key;
+
+            if (this.currentPeriod === 'week') {
+                key = date.toLocaleDateString('uk-UA', { weekday: 'short' });
+            } else if (this.currentPeriod === 'month') {
+                key = date.getDate().toString();
+            } else {
+                key = date.toLocaleDateString('uk-UA', { month: 'short' });
+            }
+
+            if (!groupedData[key]) {
+                groupedData[key] = { income: 0, expenses: 0 };
+            }
+            groupedData[key].income += inc.amount;
+        });
+
+        expenses.forEach(exp => {
+            const date = new Date(exp.date);
+            let key;
+
+            if (this.currentPeriod === 'week') {
+                key = date.toLocaleDateString('uk-UA', { weekday: 'short' });
+            } else if (this.currentPeriod === 'month') {
+                key = date.getDate().toString();
+            } else {
+                key = date.toLocaleDateString('uk-UA', { month: 'short' });
+            }
+
+            if (!groupedData[key]) {
+                groupedData[key] = { income: 0, expenses: 0 };
+            }
+            groupedData[key].expenses += exp.amount;
+        });
+
+        // Calculate budget differences
+        const labels = [];
+        const values = [];
+
+        Object.entries(groupedData).forEach(([key, data]) => {
+            labels.push(key);
+            values.push(data.income - data.expenses);
+        });
+
+        return { labels, values };
+    }
+
     getExpensesForPeriod() {
         const now = new Date();
         let startDate;
@@ -376,6 +677,30 @@ class ExpenseTracker {
         });
 
         return { labels, values };
+    }
+
+    getIncomeForPeriod() {
+        const now = new Date();
+        let startDate;
+
+        switch (this.currentPeriod) {
+            case 'week':
+                startDate = new Date(now.setDate(now.getDate() - 7));
+                break;
+            case 'month':
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                break;
+            case 'year':
+                startDate = new Date(now.getFullYear(), 0, 1);
+                break;
+            default:
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        }
+
+        return this.income.filter(income => {
+            const incomeDate = new Date(income.date);
+            return incomeDate >= startDate;
+        });
     }
 
     generateTips() {
@@ -449,6 +774,85 @@ class ExpenseTracker {
         }
 
         return tips;
+    }
+
+    addIncome() {
+        const amount = parseFloat(document.getElementById('incomeAmount').value);
+        const category = document.getElementById('incomeCategory').value;
+        const description = document.getElementById('incomeDescription').value;
+        const date = document.getElementById('incomeDate').value;
+
+        if (!amount || !category || !date) {
+            alert('Будь ласка, заповніть всі обов\'язкові поля');
+            return;
+        }
+
+        const incomeItem = {
+            id: Date.now(),
+            amount,
+            category,
+            description: description || 'Без опису',
+            date,
+            timestamp: new Date().toISOString()
+        };
+
+        this.income.unshift(incomeItem);
+        this.saveData();
+        this.renderIncome();
+        this.updateBalance();
+        this.updateStatistics();
+        this.clearIncomeForm();
+
+        // Show success animation
+        this.showNotification('Дохід додано успішно!', 'success');
+    }
+
+    deleteIncome(id) {
+        if (confirm('Ви впевнені, що хочете видалити цей дохід?')) {
+            this.income = this.income.filter(income => income.id !== id);
+            this.saveData();
+            this.renderIncome();
+            this.updateBalance();
+            this.updateStatistics();
+            this.showNotification('Дохід видалено', 'info');
+        }
+    }
+
+    renderIncome(filterCategory = '') {
+        const container = document.getElementById('incomeList');
+        let filteredIncome = this.income;
+
+        if (filterCategory) {
+            filteredIncome = this.income.filter(income => income.category === filterCategory);
+        }
+
+        if (filteredIncome.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                    <i class="fas fa-dollar-sign" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                    <p>Поки що немає доходів</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = filteredIncome.map(income => `
+            <div class="expense-item">
+                <div class="expense-info">
+                    <span class="expense-category">${this.incomeIcons[income.category]}</span>
+                    <div class="expense-details">
+                        <h4>${income.description}</h4>
+                        <p>${this.formatDate(income.date)} • ${this.getIncomeCategoryName(income.category)}</p>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <span class="expense-amount" style="color: var(--success-color);">+₴${income.amount.toFixed(2)}</span>
+                    <button class="delete-btn" onclick="tracker.deleteIncome(${income.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
     }
 
     addGoal() {
@@ -585,6 +989,18 @@ class ExpenseTracker {
         return names[category] || category;
     }
 
+    getIncomeCategoryName(category) {
+        const names = {
+            work: 'Робота',
+            rent: 'Оренда',
+            business: 'Бізнес',
+            scholarship: 'Стипендія',
+            pension: 'Пенсія',
+            government: 'Державна допомога'
+        };
+        return names[category] || category;
+    }
+
     formatDate(dateString) {
         return new Date(dateString).toLocaleDateString('uk-UA', {
             day: 'numeric',
@@ -598,8 +1014,14 @@ class ExpenseTracker {
         this.setTodayDate();
     }
 
+    clearIncomeForm() {
+        document.getElementById('incomeForm').reset();
+        this.setTodayDate();
+    }
+
     saveData() {
         localStorage.setItem('expenses', JSON.stringify(this.expenses));
+        localStorage.setItem('income', JSON.stringify(this.income));
         localStorage.setItem('goals', JSON.stringify(this.goals));
     }
 
@@ -643,4 +1065,3 @@ class ExpenseTracker {
 
 // Initialize the app
 const tracker = new ExpenseTracker();
-

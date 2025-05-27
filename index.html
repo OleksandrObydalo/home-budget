@@ -30,6 +30,10 @@
                 <i class="fas fa-plus-circle"></i>
                 Витрати
             </button>
+            <button class="nav-tab" data-tab="income">
+                <i class="fas fa-dollar-sign"></i>
+                Доходи
+            </button>
             <button class="nav-tab" data-tab="analytics">
                 <i class="fas fa-chart-pie"></i>
                 Аналітика
@@ -107,10 +111,71 @@
                 </div>
             </section>
 
+            <!-- Income Tab -->
+            <section class="tab-content" id="income-tab">
+                <div class="expense-form-container">
+                    <h2>Додати новий дохід</h2>
+                    <form class="expense-form" id="incomeForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="incomeAmount">Сума (₴)</label>
+                                <input type="number" id="incomeAmount" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="incomeCategory">Категорія</label>
+                                <select id="incomeCategory" required>
+                                    <option value="">Оберіть категорію</option>
+                                    <option value="work">💼 Робота</option>
+                                    <option value="rent">🏠 Оренда</option>
+                                    <option value="business">🏢 Бізнес</option>
+                                    <option value="scholarship">🎓 Стипендія</option>
+                                    <option value="pension">👴 Пенсія</option>
+                                    <option value="government">🏛️ Державна допомога</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="incomeDescription">Опис</label>
+                                <input type="text" id="incomeDescription" placeholder="Опис доходу">
+                            </div>
+                            <div class="form-group">
+                                <label for="incomeDate">Дата</label>
+                                <input type="date" id="incomeDate" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="add-btn">
+                            <i class="fas fa-plus"></i>
+                            Додати дохід
+                        </button>
+                    </form>
+                </div>
+
+                <div class="expenses-list-container">
+                    <div class="list-header">
+                        <h3>Останні доходи</h3>
+                        <div class="filter-controls">
+                            <select id="incomeCategoryFilter">
+                                <option value="">Всі категорії</option>
+                                <option value="work">💼 Робота</option>
+                                <option value="rent">🏠 Оренда</option>
+                                <option value="business">🏢 Бізнес</option>
+                                <option value="scholarship">🎓 Стипендія</option>
+                                <option value="pension">👴 Пенсія</option>
+                                <option value="government">🏛️ Державна допомога</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="expenses-list" id="incomeList">
+                        <!-- Income will be rendered here -->
+                    </div>
+                </div>
+            </section>
+
             <!-- Analytics Tab -->
             <section class="tab-content" id="analytics-tab">
                 <div class="analytics-header">
-                    <h2>Аналітика витрат</h2>
+                    <h2>Аналітика фінансів</h2>
                     <div class="period-selector">
                         <button class="period-btn active" data-period="week">Тиждень</button>
                         <button class="period-btn" data-period="month">Місяць</button>
@@ -124,8 +189,28 @@
                         <canvas id="categoryChart"></canvas>
                     </div>
                     <div class="chart-container">
+                        <h3>Доходи за категоріями</h3>
+                        <canvas id="incomeCategoryChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analytics-grid">
+                    <div class="chart-container full-width">
+                        <h3>Динаміка бюджету</h3>
+                        <canvas id="budgetDynamicsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="analytics-grid">
+                    <div class="chart-container">
                         <h3>Динаміка витрат</h3>
                         <canvas id="timeChart"></canvas>
+                    </div>
+                </div>
+                <div class="analytics-grid">
+                    <div class="chart-container">
+                        <h3>Динаміка доходів</h3>
+                        <canvas id="incomeDynamicsChart"></canvas>
                     </div>
                 </div>
 

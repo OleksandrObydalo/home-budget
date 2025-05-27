@@ -322,48 +322,15 @@ body {
 }
 
 /* Analytics */
-.analytics-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-
-.period-selector {
-    display: flex;
-    gap: 0.5rem;
-    background: var(--bg-secondary);
-    padding: 0.25rem;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-}
-
-.period-btn {
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.period-btn:hover {
-    color: var(--text-primary);
-}
-
-.period-btn.active {
-    background: var(--primary-color);
-    color: white;
-}
-
 .analytics-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
     gap: 2rem;
     margin-bottom: 2rem;
+}
+
+.analytics-grid .chart-container.full-width {
+    grid-column: 1 / -1;
 }
 
 .chart-container {
@@ -571,6 +538,10 @@ body {
         grid-template-columns: 1fr;
     }
     
+    .analytics-grid .chart-container.full-width {
+        grid-column: 1;
+    }
+    
     .form-row {
         grid-template-columns: 1fr;
     }
@@ -597,4 +568,3 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--text-muted);
 }
-
